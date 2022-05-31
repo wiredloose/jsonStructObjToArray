@@ -43,30 +43,39 @@ namespace jsonStructObjToArray
 
             jObj = data ?? jObject;
 
-            // Locate JSON object to be modified
-            JToken jpathObj = jObj.SelectToken(jpathStr);
+            JToken jpathObj = null;
+
+            // split jpath string - it supports multiple entries to transform multiple Objects into Arrays
+            string[] jpathStrArr = jpathStr.Split(",");
             
-            if (jpathObj!=null)
+            foreach(string pathStr in jpathStrArr)
             {
-                JObject parsedJson = JObject.Parse(jpathObj.ToString());
+                // Locate JSON object to be modified
+                jpathObj = jObj.SelectToken(pathStr);
 
-                // Move all properties to array of objects 
-                JArray jToArr = new JArray();
-                foreach (var prop in parsedJson.Properties())
+                if (jpathObj != null)
                 {
-                    jToArr.Add(
-                        new JObject(
-                            new JProperty(keyToPropStr, prop.Name),
-                            new JProperty(valToPropStr, prop.Value)
-                            )
-                        );
-                }
+                    JObject parsedJson = JObject.Parse(jpathObj.ToString());
 
-                // Replace property object with version that is array of objects
-                JObject jForReplaceObj = (JObject)jpathObj;
-                JProperty jForReplaceProp = (JProperty)jForReplaceObj.Parent;
-                jForReplaceObj.Parent.Replace(new JProperty(jForReplaceProp.Name, jToArr));
+                    // Move all properties to array of objects 
+                    JArray jToArr = new JArray();
+                    foreach (var prop in parsedJson.Properties())
+                    {
+                        jToArr.Add(
+                            new JObject(
+                                new JProperty(keyToPropStr, prop.Name),
+                                new JProperty(valToPropStr, prop.Value)
+                                )
+                            );
+                    }
+
+                    // Replace property object with version that is array of objects
+                    JObject jForReplaceObj = (JObject)jpathObj;
+                    JProperty jForReplaceProp = (JProperty)jForReplaceObj.Parent;
+                    jForReplaceObj.Parent.Replace(new JProperty(jForReplaceProp.Name, jToArr));
+                }
             }
+
 
             //return new OkObjectResult(jObject);
             return new OkObjectResult(jObj);
